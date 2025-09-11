@@ -1,27 +1,42 @@
-name: C/C++ CI
+name: Build all core packages
 
 on:
-  push:
-    branches: [ "ipq50xx-mainline-kernel-5.15-openwrt-23.05" ]
   pull_request:
-    branches: [ "ipq50xx-mainline-kernel-5.15-openwrt-23.05" ]
+    paths:
+      - '.github/workflows/packages.yml'
+      - 'config/**'
+      - 'include/**'
+      - 'package/**'
+      - 'target/linux/generic/**'
+      - 'toolchain/**'
+  push:
+    paths:
+      - '.github/workflows/packages.yml'
+      - 'config/**'
+      - 'include/**'
+      - 'package/**'
+      - 'target/linux/generic/**'
+      - 'toolchain/**'
+    branches-ignore:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: configure
-      run: ./configure
-    - name: feeds_update
-      run: ./scripts/feeds update -a
-    - name: feeds_install
-      run: ./scripts/feeds install -a
-    #- name: make
-    #  run: make
-    #- name: make check
-    #  run: make check
-    #- name: make distcheck
-    #  run: make distcheck
+  build-packages:
+    name: Build all core packages for selected target
+    permissions:
+      contents: read
+      packages: read
+      actions: write
+    secrets:
+      ccache_s3_endpoint: ${{ secrets.CCACHE_S3_ENDPOINT }}
+      ccache_s3_bucket: ${{ secrets.CCACHE_S3_BUCKET }}
+      ccache_s3_access_key: ${{ secrets.CCACHE_S3_ACCESS_KEY }}
+      ccache_s3_secret_key: ${{ secrets.CCACHE_S3_SECRET_KEY }}
+    uses: openwrt/actions-shared-workflows/.github/workflows/packages.yml@main
